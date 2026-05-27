@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 
 async def fetch_page(url: str, max_chars: int = 5000) -> str:
-    """Fetch a web page and return extracted text content."""
+    """抓取网页并提取纯文本内容。"""
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
             response = await client.get(
@@ -26,12 +26,12 @@ async def fetch_page(url: str, max_chars: int = 5000) -> str:
 
         cleaned = "\n".join(lines)
         if len(cleaned) > max_chars:
-            cleaned = cleaned[:max_chars] + f"\n\n[Truncated at {max_chars} characters]"
+            cleaned = cleaned[:max_chars] + f"\n\n[内容已截断，超过 {max_chars} 字符]"
 
         title = soup.title.string.strip() if soup.title else url
-        return f"Title: {title}\nURL: {url}\n\n{cleaned if cleaned else 'No text content extracted.'}"
+        return f"标题：{title}\n链接：{url}\n\n{cleaned if cleaned else '未提取到文本内容。'}"
 
     except httpx.TimeoutException:
-        return f"Failed to fetch {url}: request timed out. Using search snippet instead."
+        return f"抓取 {url} 超时，将使用搜索摘要。"
     except Exception as e:
-        return f"Failed to fetch {url}: {e}. Using search snippet instead."
+        return f"抓取 {url} 失败：{e}，将使用搜索摘要。"

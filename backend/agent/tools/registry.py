@@ -26,15 +26,15 @@ class ToolRegistry:
         lines = []
         for tool in self._tools.values():
             lines.append(f"- {tool.name}: {tool.description}")
-            lines.append(f"  Parameters: {json.dumps(tool.parameters, ensure_ascii=False)}")
+            lines.append(f"  参数：{json.dumps(tool.parameters, ensure_ascii=False)}")
         return "\n".join(lines)
 
     async def execute(self, name: str, params: dict) -> str:
         tool = self.get(name)
         if tool is None:
-            return f"Error: tool '{name}' not found. Available tools: {list(self._tools.keys())}"
+            return f"错误：工具 '{name}' 未找到。可用工具：{list(self._tools.keys())}"
         try:
             result = await tool.handler(**params)
             return str(result)
         except Exception as e:
-            return f"Error executing '{name}': {e}"
+            return f"执行 '{name}' 出错：{e}"

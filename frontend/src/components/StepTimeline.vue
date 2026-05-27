@@ -1,10 +1,10 @@
 <template>
   <div class="step-timeline">
-    <h3 v-if="steps.length">Research Steps</h3>
+    <h3 v-if="steps.length">调研步骤</h3>
     <div v-for="(step, i) in steps" :key="i" :class="['step-card', step.type]">
       <div class="step-header">
-        <span class="step-badge">{{ step.type.toUpperCase() }}</span>
-        <span class="step-round">Round {{ step.round }}</span>
+        <span class="step-badge">{{ typeLabel(step.type) }}</span>
+        <span class="step-round">第 {{ step.round }} 轮</span>
       </div>
       <div class="step-content">
         <template v-if="step.type === 'action' && step.tool_name">
@@ -16,7 +16,7 @@
         </template>
       </div>
     </div>
-    <div v-if="!steps.length && isResearching" class="loading">Starting research...</div>
+    <div v-if="!steps.length && isResearching" class="loading">正在启动调研...</div>
   </div>
 </template>
 
@@ -25,6 +25,11 @@ defineProps({
   steps: { type: Array, default: () => [] },
   isResearching: { type: Boolean, default: false },
 })
+
+function typeLabel(type) {
+  const labels = { thought: '思考', action: '行动', observation: '观察' }
+  return labels[type] || type.toUpperCase()
+}
 </script>
 
 <style scoped>

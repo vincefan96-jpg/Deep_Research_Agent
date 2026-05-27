@@ -3,9 +3,9 @@ from config import SEARCH_API_KEY, SEARCH_API_URL
 
 
 async def web_search(query: str, num: int = 5) -> str:
-    """Search the web and return formatted results."""
+    """在互联网上搜索并返回格式化的结果。"""
     if not SEARCH_API_KEY:
-        return "Search API key not configured."
+        return "搜索 API key 未配置。"
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -24,17 +24,17 @@ async def web_search(query: str, num: int = 5) -> str:
         results = []
         organic = data.get("organic_results", [])
         for i, r in enumerate(organic[:num], 1):
-            title = r.get("title", "No title")
-            snippet = r.get("snippet", "No description")
-            link = r.get("link", "No link")
-            results.append(f"[{i}] {title}\n    Summary: {snippet}\n    URL: {link}")
+            title = r.get("title", "无标题")
+            snippet = r.get("snippet", "无描述")
+            link = r.get("link", "无链接")
+            results.append(f"[{i}] {title}\n    摘要：{snippet}\n    链接：{link}")
 
         if not results:
-            return f"No results found for '{query}'."
+            return f"未找到与「{query}」相关的结果。"
 
         return "\n\n".join(results)
 
     except httpx.TimeoutException:
-        return f"Search timed out for query '{query}'. Please try a narrower query."
+        return f"搜索「{query}」超时，请尝试更精确的搜索词。"
     except Exception as e:
-        return f"Search failed for '{query}': {e}"
+        return f"搜索「{query}」失败：{e}"

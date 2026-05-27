@@ -2,8 +2,8 @@
   <div class="chat-panel">
     <div class="messages">
       <div class="empty-state" v-if="!report && !isResearching">
-        <h2>Deep Research Agent</h2>
-        <p>Ask any research question and I'll investigate it thoroughly.</p>
+        <h2>深度调研智能体</h2>
+        <p>提出任何研究问题，我会为你进行深入调研。</p>
         <div class="examples">
           <button v-for="q in exampleQuestions" :key="q" @click="$emit('ask', q)" class="example-btn">
             {{ q }}
@@ -12,15 +12,15 @@
       </div>
 
       <div v-if="subQuestions.length" class="plan-card">
-        <h4>Research Plan</h4>
+        <h4>调研计划</h4>
         <ol>
           <li v-for="(q, i) in subQuestions" :key="i">{{ q }}</li>
         </ol>
       </div>
 
       <div v-if="crossCheck" class="cross-check-card">
-        <h4>Cross-Check</h4>
-        <p>Consistency: <strong>{{ crossCheck.consistency }}</strong></p>
+        <h4>交叉验证</h4>
+        <p>一致性：<strong>{{ crossCheck.consistency }}</strong></p>
         <ul v-if="crossCheck.conflicts?.length">
           <li v-for="(c, i) in crossCheck.conflicts" :key="i">⚠ {{ c }}</li>
         </ul>
@@ -29,11 +29,11 @@
       <ReportView :report="report" />
 
       <div v-if="error" class="error-card">
-        <strong>Error:</strong> {{ error }}
+        <strong>错误：</strong>{{ error }}
       </div>
 
       <div v-if="isResearching && !report" class="researching-indicator">
-        <span class="pulse"></span> Researching... ({{ steps.length }} steps)
+        <span class="pulse"></span> 调研中...（已执行 {{ steps.length }} 步）
       </div>
     </div>
 
@@ -41,10 +41,10 @@
       <input
         v-model="query"
         type="text"
-        placeholder="Enter your research question..."
+        placeholder="输入你的研究问题..."
         :disabled="isResearching"
       />
-      <button type="submit" :disabled="isResearching || !query.trim()">Research</button>
+      <button type="submit" :disabled="isResearching || !query.trim()">开始调研</button>
     </form>
   </div>
 </template>
@@ -67,9 +67,9 @@ const emit = defineEmits(['ask'])
 const query = ref('')
 
 const exampleQuestions = [
-  'What are the main trends in AI agent development in 2025?',
-  'Compare React, Vue, and Svelte for building large-scale applications',
-  'What is the current state of quantum computing research?',
+  '2025 年 AI Agent 开发的主要趋势是什么？',
+  '对比 React、Vue 和 Svelte 在大规模应用中的表现',
+  '量子计算研究的现状如何？',
 ]
 
 function handleSubmit() {

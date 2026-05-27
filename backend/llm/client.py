@@ -20,9 +20,9 @@ class LLMClient:
         return response.choices[0].message.content or ""
 
     async def generate_plan(self, query: str) -> list[str]:
-        prompt = f"""Break the following research question into 2-4 specific sub-questions.
-Return ONLY a JSON array of strings, no other text.
-Question: {query}"""
+        prompt = f"""将以下研究问题拆分为 2-4 个具体的子问题。
+只返回一个 JSON 字符串数组，不要包含其他内容。
+问题：{query}"""
         raw = await self.chat([{"role": "user", "content": prompt}])
         import json
         try:
@@ -31,5 +31,5 @@ Question: {query}"""
             return [query]
 
     async def summarize(self, text: str, max_length: int = 500) -> str:
-        prompt = f"Summarize the following in under {max_length} characters:\n\n{text}"
+        prompt = f"请将以下内容总结在 {max_length} 字以内：\n\n{text}"
         return await self.chat([{"role": "user", "content": prompt}])

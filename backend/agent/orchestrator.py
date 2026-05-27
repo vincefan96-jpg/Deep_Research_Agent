@@ -18,29 +18,29 @@ class ResearchOrchestrator:
         from agent.tools.registry import Tool
         self.registry.register(Tool(
             name="web_search",
-            description="Search the web for information. Returns titles, summaries, and URLs.",
-            parameters={"query": {"type": "string", "description": "Search query"}},
+            description="在互联网上搜索信息。返回标题、摘要和 URL 列表。",
+            parameters={"query": {"type": "string", "description": "搜索关键词"}},
             handler=web_search,
         ))
         self.registry.register(Tool(
             name="fetch_page",
-            description="Fetch and extract text content from a specific URL. Use this to read articles in depth.",
-            parameters={"url": {"type": "string", "description": "Full URL to fetch"}},
+            description="抓取并提取指定 URL 的文本内容。用于深入阅读文章。",
+            parameters={"url": {"type": "string", "description": "要抓取的完整 URL"}},
             handler=fetch_page,
         ))
         self.registry.register(Tool(
             name="cross_check",
-            description="Cross-validate collected facts for consistency. Use before writing final answer.",
-            parameters={"facts": {"type": "string", "description": "All collected facts to validate"}},
+            description="对已收集的事实进行交叉验证，检查一致性。在撰写最终答案前使用。",
+            parameters={"facts": {"type": "string", "description": "待验证的所有收集事实"}},
             handler=cross_check,
         ))
 
     async def research(self, query: str) -> AsyncGenerator[dict, None]:
-        # Phase 1: Generate research plan
+        # 阶段一：生成调研计划
         sub_questions = await self.llm.generate_plan(query)
         yield PlanEvent(sub_questions=sub_questions).model_dump()
 
-        # Phase 2: Run ReAct loop
+        # 阶段二：运行 ReAct 循环
         loop = AgentLoop(self.registry, self.llm)
         all_observations = []
 
@@ -49,8 +49,8 @@ class ResearchOrchestrator:
                 all_observations.append(step.content)
             yield step.model_dump()
 
-        # Phase 3: Cross-check
-        facts = "\n".join(all_observations[-5:])  # Last 5 observations
+        # 阶段三：交叉验证
+        facts = "\n".join(all_observations[-5:])  # 最近 5 条观察
         cross_result = await cross_check(facts)
         cross_event = CrossCheckEvent(
             consistency="medium",
@@ -59,15 +59,15 @@ class ResearchOrchestrator:
         )
         yield cross_event.model_dump()
 
-        # Phase 4: Generate final report
+        # 阶段四：生成最终报告
         final_report = await self.llm.chat([
             {
                 "role": "system",
-                "content": "Write a well-structured research report in Markdown based on the findings. Include a title, section headers, citations as [Source: URL], and a sources list at the end.",
+                "content": "根据调研结果撰写一份结构良好的 Markdown 调研报告。包含标题、章节标题、内联引用 [来源: URL]，以及文末的来源列表。",
             },
             {
                 "role": "user",
-                "content": f"Research question: {query}\n\nSub-questions: {', '.join(sub_questions)}\n\nCollected findings:\n{facts}\n\nCross-check result:\n{cross_result}",
+                "content": f"研究问题：{query}\n\n子问题：{', '.join(sub_questions)}\n\n收集到的信息：\n{facts}\n\n交叉验证结果：\n{cross_result}",
             },
         ])
 
@@ -77,4 +77,4 @@ class ResearchOrchestrator:
     def _extract_sources(self, report: str) -> list[str]:
         import re
         urls = re.findall(r'https?://[^\s\)\]]+', report)
-        return list(dict.fromkeys(urls))  # dedupe preserving order
+        return list(dict.fromkeys(urls))  # 去重保留顺序

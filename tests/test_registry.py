@@ -34,4 +34,4 @@ async def test_execute():
 async def test_execute_unknown_tool():
     reg = ToolRegistry()
     result = await reg.execute("unknown", {})
-    assert "not found" in result
+    assert "未找到" in result

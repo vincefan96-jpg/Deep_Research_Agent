@@ -2,23 +2,23 @@ from llm.client import LLMClient
 
 
 async def cross_check(facts: str) -> str:
-    """Cross-validate collected facts for consistency and conflicts."""
+    """对收集的事实进行交叉验证，检查一致性和矛盾。"""
     llm = LLMClient()
-    prompt = f"""You are a fact-checker. Review the following collected information for internal consistency.
+    prompt = f"""你是一名事实核查员。请审查以下收集到的信息，检查其内部一致性。
 
-Identify:
-1. Consistency level (high/medium/low)
-2. Any conflicting claims
-3. Facts that are verified across multiple sources
+请识别：
+1. 一致性水平（高/中/低）
+2. 任何相互矛盾的结论
+3. 被多个来源交叉验证的事实
 
-Return your analysis in this JSON format:
+请以以下 JSON 格式返回分析结果：
 {{
-  "consistency": "high|medium|low",
-  "conflicts": ["conflict description..."],
-  "verified_facts": ["verified fact..."]
+  "consistency": "高|中|低",
+  "conflicts": ["矛盾描述..."],
+  "verified_facts": ["已验证的事实..."]
 }}
 
-Information to check:
+待审查信息：
 {facts}"""
 
     raw = await llm.chat([{"role": "user", "content": prompt}], max_tokens=2000)
@@ -28,27 +28,27 @@ Information to check:
         result = json.loads(raw)
     except json.JSONDecodeError:
         result = {
-            "consistency": "medium",
-            "conflicts": ["Could not parse cross-check result"],
+            "consistency": "中",
+            "conflicts": ["无法解析交叉验证结果"],
             "verified_facts": [],
         }
 
     conflicts = result.get("conflicts", [])
     verified = result.get("verified_facts", [])
-    consistency = result.get("consistency", "medium")
+    consistency = result.get("consistency", "中")
 
     lines = [
-        f"Cross-check consistency: {consistency}",
+        f"交叉验证一致性：{consistency}",
     ]
     if conflicts:
-        lines.append(f"\nConflicts found ({len(conflicts)}):")
+        lines.append(f"\n发现矛盾（{len(conflicts)} 处）：")
         for c in conflicts:
             lines.append(f"  - {c}")
     if verified:
-        lines.append(f"\nVerified facts ({len(verified)}):")
+        lines.append(f"\n已验证的事实（{len(verified)} 条）：")
         for f in verified:
             lines.append(f"  - {f}")
     if not conflicts and not verified:
-        lines.append("No conflicts or verified facts identified.")
+        lines.append("未发现矛盾或已验证的事实。")
 
     return "\n".join(lines)

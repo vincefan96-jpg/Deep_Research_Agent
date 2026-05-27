@@ -1,9 +1,9 @@
 <template>
   <div class="report-view" v-if="report">
-    <h3>Research Report</h3>
+    <h3>调研报告</h3>
     <div class="report-body" v-html="rendered"></div>
     <div class="sources" v-if="report.sources?.length">
-      <h4>Sources</h4>
+      <h4>参考来源</h4>
       <ul>
         <li v-for="(s, i) in report.sources" :key="i">
           <a :href="s" target="_blank">{{ s }}</a>

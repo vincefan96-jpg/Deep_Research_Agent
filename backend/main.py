@@ -11,7 +11,7 @@ async def lifespan(app: FastAPI):
     await close_db()
 
 
-app = FastAPI(title="Deep Research Agent", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="深度调研智能体", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
