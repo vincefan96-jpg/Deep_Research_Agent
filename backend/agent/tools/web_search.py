@@ -7,7 +7,7 @@ async def web_search(query: str, num: int = 5) -> str:
     if not SEARCH_API_KEY:
         return "搜索 API key 未配置。"
 
-    try:
+    try:#用 async with 而非直接 await client.get()，确保无论成功还是异常，连接都能被正确释放
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 SEARCH_API_URL,
@@ -34,7 +34,7 @@ async def web_search(query: str, num: int = 5) -> str:
 
         return "\n\n".join(results)
 
-    except httpx.TimeoutException:
+    except httpx.TimeoutException: #TimeoutException — 精确捕获超时，给出针对性建议（缩短搜索词），而不是模糊的"失败了
         return f"搜索「{query}」超时，请尝试更精确的搜索词。"
     except Exception as e:
-        return f"搜索「{query}」失败：{e}"
+        return f"搜索「{query}」失败：{e}" #Exception — 兜底捕获所有其他异常

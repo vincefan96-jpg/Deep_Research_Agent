@@ -4,7 +4,6 @@ export function useSSE() {
   const isResearching = ref(false)
   const subQuestions = ref([])
   const steps = ref([])
-  const crossCheck = ref(null)
   const report = ref(null)
   const error = ref(null)
 
@@ -12,7 +11,6 @@ export function useSSE() {
     isResearching.value = true
     subQuestions.value = []
     steps.value = []
-    crossCheck.value = null
     report.value = null
     error.value = null
 
@@ -63,9 +61,6 @@ export function useSSE() {
       case 'step':
         steps.value.push(data)
         break
-      case 'cross_check':
-        crossCheck.value = data
-        break
       case 'report':
         report.value = data
         break
@@ -80,7 +75,6 @@ export function useSSE() {
     isResearching,
     subQuestions,
     steps,
-    crossCheck,
     report,
     error,
     startResearch,

@@ -1,10 +1,9 @@
 from typing import AsyncGenerator
-from models.schemas import StepEvent, PlanEvent, CrossCheckEvent, ReportEvent
+from models.schemas import PlanEvent, ReportEvent
 from agent.loop import AgentLoop
 from agent.tools.registry import ToolRegistry
 from agent.tools.web_search import web_search
 from agent.tools.fetch_page import fetch_page
-from agent.tools.cross_check import cross_check
 from llm.client import LLMClient
 
 
@@ -28,38 +27,24 @@ class ResearchOrchestrator:
             parameters={"url": {"type": "string", "description": "要抓取的完整 URL"}},
             handler=fetch_page,
         ))
-        self.registry.register(Tool(
-            name="cross_check",
-            description="对已收集的事实进行交叉验证，检查一致性。在撰写最终答案前使用。",
-            parameters={"facts": {"type": "string", "description": "待验证的所有收集事实"}},
-            handler=cross_check,
-        ))
 
     async def research(self, query: str) -> AsyncGenerator[dict, None]:
         # 阶段一：生成调研计划
-        sub_questions = await self.llm.generate_plan(query)
+        sub_questions = await self.llm.generate_plan(query) #返回值是 list[str]，例如 ["什么是 X？", "X 的主要应用场景？", "X 的优缺点？"]
         yield PlanEvent(sub_questions=sub_questions).model_dump()
 
         # 阶段二：运行 ReAct 循环
         loop = AgentLoop(self.registry, self.llm)
-        all_observations = []
 
-        async for step in loop.run(query):
-            if step.type == "observation":
-                all_observations.append(step.content)
+        async for step in loop.run(query): #loop.run(query) 返回一个异步生成器，每轮产出 StepEvent（可能是 thought、action 或 observation）
             yield step.model_dump()
 
-        # 阶段三：交叉验证
-        facts = "\n".join(all_observations[-5:])  # 最近 5 条观察
-        cross_result = await cross_check(facts)
-        cross_event = CrossCheckEvent(
-            consistency="medium",
-            conflicts=[],
-            verified_facts=[],
-        )
-        yield cross_event.model_dump()
-
-        # 阶段四：生成最终报告
+        # 阶段三：生成最终报告
+        observations = "\n".join([
+            s.content for s in loop.memory.steps
+            if s.type.value == "observation"
+        ][-5:])
+        facts = observations if observations else "未收集到信息"
         final_report = await self.llm.chat([
             {
                 "role": "system",
@@ -67,7 +52,7 @@ class ResearchOrchestrator:
             },
             {
                 "role": "user",
-                "content": f"研究问题：{query}\n\n子问题：{', '.join(sub_questions)}\n\n收集到的信息：\n{facts}\n\n交叉验证结果：\n{cross_result}",
+                "content": f"研究问题：{query}\n\n子问题：{', '.join(sub_questions)}\n\n收集到的信息：\n{facts}",
             },
         ])
 
@@ -76,5 +61,5 @@ class ResearchOrchestrator:
 
     def _extract_sources(self, report: str) -> list[str]:
         import re
-        urls = re.findall(r'https?://[^\s\)\]]+', report)
+        urls = re.findall(r'https?://[^\s\)\]]+', report) #用正则匹配所有 http:// 或 https:// 开头的 URL
         return list(dict.fromkeys(urls))  # 去重保留顺序

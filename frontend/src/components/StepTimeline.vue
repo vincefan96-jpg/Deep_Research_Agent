@@ -40,12 +40,12 @@ function typeLabel(type) {
   margin-bottom: 0.5rem;
   border-radius: 0 6px 6px 0;
 }
-.step-card.thought { border-color: #6366f1; background: #f5f3ff; }
+.step-card.thought { border-color: #0ea5e9; background: #f0f9ff; }
 .step-card.action { border-color: #f59e0b; background: #fffbeb; }
 .step-card.observation { border-color: #10b981; background: #f0fdf4; }
 .step-header { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.25rem; }
 .step-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
-.thought .step-badge { background: #e0e7ff; color: #4338ca; }
+.thought .step-badge { background: #e0f2fe; color: #0369a1; }
 .action .step-badge { background: #fef3c7; color: #b45309; }
 .observation .step-badge { background: #d1fae5; color: #065f46; }
 .step-round { font-size: 0.75rem; color: #888; }

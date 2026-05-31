@@ -34,3 +34,10 @@ async def get_session(session_id: str) -> dict | None:
     cursor = await db.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
     row = await cursor.fetchone()
     return dict(row) if row else None
+
+
+async def delete_session(session_id: str) -> bool:
+    db = await get_db()
+    cursor = await db.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    await db.commit()
+    return cursor.rowcount > 0

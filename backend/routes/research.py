@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from models.schemas import ResearchRequest
 from agent.orchestrator import ResearchOrchestrator
-from db.repository import create_session, update_session, get_all_sessions, get_session
+from db.repository import create_session, update_session, get_all_sessions, get_session, delete_session
 
 router = APIRouter(prefix="/api")
 
@@ -48,8 +48,6 @@ async def start_research(req: ResearchRequest):
 def _event_type(event: dict) -> str:
     if "sub_questions" in event:
         return "plan"
-    if "consistency" in event:
-        return "cross_check"
     if "markdown" in event:
         return "report"
     if event.get("type") in ("thought", "action", "observation"):
@@ -72,3 +70,11 @@ async def get_history(session_id: str):
         session["steps"] = json.loads(session["steps_json"])
     del session["steps_json"]
     return session
+
+
+@router.delete("/history/{session_id}")
+async def remove_history(session_id: str):
+    deleted = await delete_session(session_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"ok": True}

@@ -14,4 +14,6 @@ SEARCH_API_KEY = os.getenv("SEARCH_API_KEY", "")
 SEARCH_API_URL = os.getenv("SEARCH_API_URL", "https://serpapi.com/search")
 MAX_ROUNDS = int(os.getenv("MAX_ROUNDS", "10"))
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "8000"))
-DB_PATH = os.getenv("DB_PATH", "research.db")
+DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = os.getenv("DB_PATH", str(DATA_DIR / "research.db"))
