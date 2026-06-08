@@ -18,19 +18,18 @@
 ```
 ├── backend/
 │   ├── agent/
-│   │   ├── loop.py              # ReAct 循环引擎（Thought → Action → Observation）
+│   │   ├── loop.py              # ReAct 循环引擎（Function Calling 驱动）
 │   │   ├── memory.py            # 上下文记忆管理
 │   │   ├── orchestrator.py      # 调研编排器（计划 + 循环）
-│   │   ├── parser.py            # LLM 输出解析器
 │   │   └── tools/
-│   │       ├── registry.py      # 工具注册表
+│   │       ├── registry.py      # 工具注册表（OpenAI Tool Schema）
 │   │       ├── web_search.py    # 网络搜索工具
 │   │       └── fetch_page.py    # 网页抓取工具
 │   ├── db/
 │   │   ├── connection.py        # SQLite 连接管理
 │   │   └── repository.py        # 会话存储/查询
 │   ├── llm/
-│   │   └── client.py            # LLM 客户端（OpenAI 兼容）
+│   │   └── client.py            # LLM 客户端（支持 Function Calling / JSON Mode）
 │   ├── models/
 │   │   └── schemas.py           # Pydantic 数据模型
 │   ├── routes/
@@ -122,8 +121,8 @@ npm run dev
 
 ## 工作原理
 
-1. **生成计划**：LLM 将用户问题分解为多个子问题
-2. **ReAct 循环**：每轮依次执行「思考 → 搜索 → 阅读网页 → 观察分析」
+1. **生成计划**：LLM 将用户问题分解为多个子问题（JSON Mode）
+2. **ReAct 循环**：每轮依次执行「思考 → 工具调用 → 观察分析」，通过 Function Calling 驱动工具选择
 3. **记忆管理**：自动提取关键事实，避免上下文膨胀
 4. **生成报告**：基于收集的信息生成结构化 Markdown 报告
 
