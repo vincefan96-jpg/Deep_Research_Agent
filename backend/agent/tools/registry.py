@@ -1,13 +1,12 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Any
-import json
 
 
 @dataclass
 class Tool:
     name: str
     description: str
-    parameters: dict  # JSON Schema
+    parameters: dict  # JSON Schema properties, e.g. {"url": {"type": "string", "description": "..."}}
     handler: Callable[..., Any]
 
 
@@ -21,13 +20,19 @@ class ToolRegistry:
     def get(self, name: str) -> Tool | None:
         return self._tools.get(name)
 
-    def get_schema_for_llm(self) -> str:
-        """Generate a text description of all tools for the LLM prompt."""
-        lines = []
-        for tool in self._tools.values():
-            lines.append(f"- {tool.name}: {tool.description}")
-            lines.append(f"  参数：{json.dumps(tool.parameters, ensure_ascii=False)}")
-        return "\n".join(lines)
+    def get_openai_tools(self) -> list[dict]:
+        return [{
+            "type": "function",
+            "function": {
+                "name": tool.name,
+                "description": tool.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": tool.parameters,
+                    "required": list(tool.parameters.keys()),
+                }
+            }
+        } for tool in self._tools.values()]
 
     async def execute(self, name: str, params: dict) -> str:
         tool = self.get(name)
