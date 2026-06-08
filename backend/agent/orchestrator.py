@@ -1,10 +1,14 @@
 from typing import AsyncGenerator
 from models.schemas import PlanEvent, ReportEvent
 from agent.loop import AgentLoop
-from agent.tools.registry import ToolRegistry
+from agent.tools.registry import ToolRegistry, Tool
 from agent.tools.web_search import web_search
 from agent.tools.fetch_page import fetch_page
 from llm.client import LLMClient
+
+
+async def _submit_report_handler(**kwargs):
+    return "报告已提交。"
 
 
 class ResearchOrchestrator:
@@ -14,7 +18,6 @@ class ResearchOrchestrator:
         self._setup_tools()
 
     def _setup_tools(self):
-        from agent.tools.registry import Tool
         self.registry.register(Tool(
             name="web_search",
             description="在互联网上搜索信息。返回标题、摘要和 URL 列表。",
@@ -27,39 +30,51 @@ class ResearchOrchestrator:
             parameters={"url": {"type": "string", "description": "要抓取的完整 URL"}},
             handler=fetch_page,
         ))
+        self.registry.register(Tool(
+            name="submit_report",
+            description="提交最终调研报告。当收集到足够信息后调用此工具结束调研。",
+            parameters={
+                "markdown": {
+                    "type": "string",
+                    "description": "格式为 Markdown 的综合调研报告，包含引用来源 [来源: URL]",
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "报告中引用的所有来源 URL 列表",
+                },
+            },
+            handler=_submit_report_handler,
+        ))
 
     async def research(self, query: str) -> AsyncGenerator[dict, None]:
-        # 阶段一：生成调研计划
-        sub_questions = await self.llm.generate_plan(query) #返回值是 list[str]，例如 ["什么是 X？", "X 的主要应用场景？", "X 的优缺点？"]
-        yield PlanEvent(sub_questions=sub_questions).model_dump()
-
-        # 阶段二：运行 ReAct 循环
-        loop = AgentLoop(self.registry, self.llm)
-
-        async for step in loop.run(query): #loop.run(query) 返回一个异步生成器，每轮产出 StepEvent（可能是 thought、action 或 observation）
-            yield step.model_dump()
-
-        # 阶段三：生成最终报告
-        observations = "\n".join([
-            s.content for s in loop.memory.steps
-            if s.type.value == "observation"
-        ][-5:])
-        facts = observations if observations else "未收集到信息"
-        final_report = await self.llm.chat([
+        # 阶段一：JSON Mode 生成调研计划
+        plan_data = await self.llm.chat_json_mode([
             {
                 "role": "system",
-                "content": "根据调研结果撰写一份结构良好的 Markdown 调研报告。包含标题、章节标题、内联引用 [来源: URL]，以及文末的来源列表。",
+                "content": (
+                    "你是一个研究计划者。将用户的研究问题拆分为 2-4 个具体的子问题。"
+                    "只返回一个 JSON 对象，格式：{\"sub_questions\": [\"子问题1\", \"子问题2\"]}"
+                ),
             },
-            {
-                "role": "user",
-                "content": f"研究问题：{query}\n\n子问题：{', '.join(sub_questions)}\n\n收集到的信息：\n{facts}",
-            },
+            {"role": "user", "content": query},
         ])
+        sub_questions = plan_data.get("sub_questions", [query])
+        if not isinstance(sub_questions, list) or len(sub_questions) == 0:
+            sub_questions = [query]
+        yield PlanEvent(sub_questions=sub_questions).model_dump()
 
-        sources = self._extract_sources(final_report)
-        yield ReportEvent(markdown=final_report, sources=sources).model_dump()
+        # 阶段二：ReAct 循环
+        tool_defs = self.registry.get_openai_tools()
+        loop = AgentLoop(self.registry, self.llm)
+        async for step in loop.run(query, tool_defs):
+            yield step.model_dump()
+
+        # 阶段三：最终报告事件
+        sources = self._extract_sources(loop.final_report)
+        yield ReportEvent(markdown=loop.final_report, sources=sources).model_dump()
 
     def _extract_sources(self, report: str) -> list[str]:
         import re
-        urls = re.findall(r'https?://[^\s\)\]]+', report) #用正则匹配所有 http:// 或 https:// 开头的 URL
-        return list(dict.fromkeys(urls))  # 去重保留顺序
+        urls = re.findall(r'https?://[^\s\)\]]+', report)
+        return list(dict.fromkeys(urls))
